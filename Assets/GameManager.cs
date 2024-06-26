@@ -47,13 +47,103 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    int EvaluateBoard(string[] board)
+    {
+        int[,] winCombinations = new int[,]
+        {
+            {0, 1, 2},
+            {3, 4, 5},
+            {6, 7, 8},
+            {0, 3, 6},
+            {1, 4, 7},
+            {2, 5, 8},
+            {0, 4, 8},
+            {2, 4, 6}
+        };
+
+        for (int i = 0; i < winCombinations.GetLength(0); i++)
+        {
+            if (board[winCombinations[i, 0]] != null &&
+                board[winCombinations[i, 0]] == board[winCombinations[i, 1]] &&
+                board[winCombinations[i, 1]] == board[winCombinations[i, 2]])
+            {
+                if (board[winCombinations[i, 0]] == "X")
+                    return -10;
+                else if (board[winCombinations[i, 0]] == "O")
+                    return 10;
+            }
+        }
+        return 0;
+    }
+
+    int Minimax(string[] board, int depth, bool isMaximizing)
+    {
+        int score = EvaluateBoard(board);
+
+        if (score == 10)
+            return score - depth;
+        if (score == -10)
+            return score + depth;
+        if (CheckDraw())
+            return 0;
+
+        if (isMaximizing)
+        {
+            int best = int.MinValue;
+
+            for (int i = 0; i < board.Length; i++)
+            {
+                if (board[i] == null)
+                {
+                    board[i] = "O";
+                    best = Mathf.Max(best, Minimax(board, depth + 1, false));
+                    board[i] = null;
+                }
+            }
+            return best;
+        }
+        else
+        {
+            int best = int.MaxValue;
+
+            for (int i = 0; i < board.Length; i++)
+            {
+                if (board[i] == null)
+                {
+                    board[i] = "X";
+                    best = Mathf.Min(best, Minimax(board, depth + 1, true));
+                    board[i] = null;
+                }
+            }
+            return best;
+        }
+    }
+
     void AIMove()
     {
-        int index = GetRandomEmptyIndex();
-        if (index != -1)
+        int bestMove = -1;
+        int bestValue = int.MinValue;
+
+        for (int i = 0; i < boardState.Length; i++)
         {
-            boardState[index] = currentPlayer;
-            buttons[index].GetComponentInChildren<Text>().text = currentPlayer;
+            if (boardState[i] == null)
+            {
+                boardState[i] = "O";
+                int moveValue = Minimax(boardState, 0, false);
+                boardState[i] = null;
+
+                if (moveValue > bestValue)
+                {
+                    bestMove = i;
+                    bestValue = moveValue;
+                }
+            }
+        }
+
+        if (bestMove != -1)
+        {
+            boardState[bestMove] = currentPlayer;
+            buttons[bestMove].GetComponentInChildren<Text>().text = currentPlayer;
             if (CheckWin())
             {
                 EndGame(currentPlayer + " Wins!");
@@ -68,6 +158,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
 
     int GetRandomEmptyIndex()
     {
