@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;  // 添加这一行
+using System.Collections.Generic;  
 
 public class GameManager : MonoBehaviour
 {
     public Button[] buttons;
     public Text gameOverText;
     public Button restartButton;
+    public Toggle difficultyToggle;
 
     private string currentPlayer;
     private string[] boardState;
@@ -23,7 +24,22 @@ public class GameManager : MonoBehaviour
         gameOverText.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(false);
         restartButton.onClick.AddListener(RestartGame);
+        difficultyToggle.isOn = false;  // 默认关闭
+        difficultyToggle.onValueChanged.AddListener(ToggleValueChanged);
     }
+
+    void ToggleValueChanged(bool state)
+    {
+        if (state)
+        {
+            Debug.Log("使用高级AI");
+        }
+        else
+        {
+            Debug.Log("使用简单AI");
+        }
+    }
+
 
     void OnButtonClick(int index)
     {
@@ -45,6 +61,8 @@ public class GameManager : MonoBehaviour
                 Invoke("AIMove", 1f); // AI在1秒后执行
             }
         }
+        difficultyToggle.gameObject.SetActive(false);
+
     }
 
     int EvaluateBoard(string[] board)
@@ -122,21 +140,42 @@ public class GameManager : MonoBehaviour
     void AIMove()
     {
         int bestMove = -1;
-        int bestValue = int.MinValue;
 
-        for (int i = 0; i < boardState.Length; i++)
+        if (difficultyToggle.isOn)
         {
-            if (boardState[i] == null)
-            {
-                boardState[i] = "O";
-                int moveValue = Minimax(boardState, 0, false);
-                boardState[i] = null;
+            // 使用高级AI (Minimax算法)
+            int bestValue = int.MinValue;
 
-                if (moveValue > bestValue)
+            for (int i = 0; i < boardState.Length; i++)
+            {
+                if (boardState[i] == null)
                 {
-                    bestMove = i;
-                    bestValue = moveValue;
+                    boardState[i] = "O";
+                    int moveValue = Minimax(boardState, 0, false);
+                    boardState[i] = null;
+
+                    if (moveValue > bestValue)
+                    {
+                        bestMove = i;
+                        bestValue = moveValue;
+                    }
                 }
+            }
+        }
+        else
+        {
+            // 使用简单AI (随机选择)
+            List<int> emptyIndices = new List<int>();
+            for (int i = 0; i < boardState.Length; i++)
+            {
+                if (boardState[i] == null)
+                {
+                    emptyIndices.Add(i);
+                }
+            }
+            if (emptyIndices.Count > 0)
+            {
+                bestMove = emptyIndices[Random.Range(0, emptyIndices.Count)];
             }
         }
 
@@ -238,5 +277,7 @@ public class GameManager : MonoBehaviour
         }
         gameOverText.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(false);
+        difficultyToggle.gameObject.SetActive(true);
+
     }
 }
